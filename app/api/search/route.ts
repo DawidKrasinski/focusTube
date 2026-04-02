@@ -26,7 +26,9 @@ function parseIsoDuration(iso: string): { formatted: string; seconds: number } {
 function formatUploadDate(publishedAt: string): string {
   const now = new Date();
   const published = new Date(publishedAt);
-  const diffDays = Math.floor((now.getTime() - published.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(
+    (now.getTime() - published.getTime()) / (1000 * 60 * 60 * 24),
+  );
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
@@ -42,10 +44,13 @@ function formatViewCount(count: number): string {
 }
 
 export async function GET(request: NextRequest) {
-  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === "your_youtube_api_key_here") {
+  if (!YOUTUBE_API_KEY) {
     return NextResponse.json(
-      { error: "YouTube API key not configured. Set YOUTUBE_API_KEY in .env.local" },
-      { status: 500 }
+      {
+        error:
+          "YouTube API key not configured. Set YOUTUBE_API_KEY in .env.local",
+      },
+      { status: 500 },
     );
   }
 
@@ -55,7 +60,10 @@ export async function GET(request: NextRequest) {
   const uploadDate = searchParams.get("uploadDate") || "any";
 
   if (!query?.trim()) {
-    return NextResponse.json({ error: "Query parameter 'q' is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Query parameter 'q' is required" },
+      { status: 400 },
+    );
   }
 
   // Build YouTube search params
@@ -67,32 +75,43 @@ export async function GET(request: NextRequest) {
     key: YOUTUBE_API_KEY,
   });
 
-  if (duration === "short") params.set("videoDuration", "short");   // < 4 min
-  else if (duration === "medium") params.set("videoDuration", "medium"); // 4–20 min
-  else if (duration === "long") params.set("videoDuration", "long");    // > 20 min
+  if (duration === "short")
+    params.set("videoDuration", "short"); // < 4 min
+  else if (duration === "medium")
+    params.set("videoDuration", "medium"); // 4–20 min
+  else if (duration === "long") params.set("videoDuration", "long"); // > 20 min
 
   if (uploadDate !== "any") {
     const now = new Date();
     let publishedAfter: Date | null = null;
-    if (uploadDate === "hour") publishedAfter = new Date(now.getTime() - 60 * 60 * 1000);
+    if (uploadDate === "hour")
+      publishedAfter = new Date(now.getTime() - 60 * 60 * 1000);
     else if (uploadDate === "today") {
       const d = new Date(now);
       d.setHours(0, 0, 0, 0);
       publishedAfter = d;
-    } else if (uploadDate === "week") publishedAfter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    else if (uploadDate === "month") publishedAfter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    else if (uploadDate === "year") publishedAfter = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-    if (publishedAfter) params.set("publishedAfter", publishedAfter.toISOString());
+    } else if (uploadDate === "week")
+      publishedAfter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    else if (uploadDate === "month")
+      publishedAfter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    else if (uploadDate === "year")
+      publishedAfter = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    if (publishedAfter)
+      params.set("publishedAfter", publishedAfter.toISOString());
   }
 
   // Step 1: Search for videos
-  const searchRes = await fetch(`${YOUTUBE_API_BASE}/search?${params.toString()}`);
+  const searchRes = await fetch(
+    `${YOUTUBE_API_BASE}/search?${params.toString()}`,
+  );
   if (!searchRes.ok) {
     const err = await searchRes.json().catch(() => ({}));
     return NextResponse.json({ error: err }, { status: searchRes.status });
   }
   const searchData = await searchRes.json();
-  const items: any[] = (searchData.items || []).filter((item: any) => item.id?.videoId);
+  const items: any[] = (searchData.items || []).filter(
+    (item: any) => item.id?.videoId,
+  );
 
   if (items.length === 0) {
     return NextResponse.json({ videos: [] });
@@ -106,13 +125,18 @@ export async function GET(request: NextRequest) {
     key: YOUTUBE_API_KEY,
   });
 
-  const videosRes = await fetch(`${YOUTUBE_API_BASE}/videos?${videosParams.toString()}`);
+  const videosRes = await fetch(
+    `${YOUTUBE_API_BASE}/videos?${videosParams.toString()}`,
+  );
   const videosData = videosRes.ok ? await videosRes.json() : { items: [] };
 
   const durationMap = new Map<string, { formatted: string; seconds: number }>();
   const viewsMap = new Map<string, string>();
   for (const item of videosData.items || []) {
-    durationMap.set(item.id, parseIsoDuration(item.contentDetails?.duration || "PT0S"));
+    durationMap.set(
+      item.id,
+      parseIsoDuration(item.contentDetails?.duration || "PT0S"),
+    );
     const viewCount = parseInt(item.statistics?.viewCount || "0");
     viewsMap.set(item.id, formatViewCount(viewCount));
   }

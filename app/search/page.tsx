@@ -12,7 +12,11 @@ import {
   VideoListItem,
   VideoListItemSkeleton,
 } from "@/components/video-list-item";
-import { type Video, type DurationFilter, type UploadDateFilter } from "@/lib/types";
+import {
+  type Video,
+  type DurationFilter,
+  type UploadDateFilter,
+} from "@/lib/types";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -40,7 +44,11 @@ function SearchContent() {
         if (data.error) throw new Error(JSON.stringify(data.error));
         setVideos(data.videos || []);
       })
-      .catch(() => setError("Nie udało się pobrać filmów. Sprawdź klucz API i spróbuj ponownie."))
+      .catch(() =>
+        setError(
+          "Nie udało się pobrać filmów. Sprawdź klucz API i spróbuj ponownie.",
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [query, duration, uploadDate]);
 
