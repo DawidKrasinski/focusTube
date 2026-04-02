@@ -8,18 +8,20 @@ export default function HomePage() {
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   return (
-    <main 
+    <main
       className={`min-h-screen flex flex-col items-center px-4 py-12 transition-all duration-300 ease-out ${
-        isInputFocused 
-          ? "justify-start pt-8 sm:justify-center sm:pt-12" 
+        isInputFocused
+          ? "justify-start pt-8 sm:justify-center sm:pt-12"
           : "justify-center -mt-16 sm:-mt-8 md:mt-0"
       }`}
     >
       <div className="w-full max-w-2xl mx-auto space-y-8">
         {/* Logo and Title */}
-        <div 
+        <div
           className={`text-center space-y-4 transition-all duration-300 ease-out ${
-            isInputFocused ? "sm:opacity-100 opacity-0 h-0 sm:h-auto overflow-hidden sm:overflow-visible" : "opacity-100"
+            isInputFocused
+              ? "sm:opacity-100 opacity-0 h-0 sm:h-auto overflow-hidden sm:overflow-visible"
+              : "opacity-100"
           }`}
         >
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -31,36 +33,36 @@ export default function HomePage() {
             FocusTube
           </h1>
           <p className="text-muted-foreground text-lg max-w-md mx-auto text-pretty">
-            AI-powered search that filters out distractions. Find educational content that actually matters.
+            Search for videos without distractions. No recommendations, no
+            feeds, just focus.
           </p>
         </div>
 
         {/* Search Bar */}
         <div className="w-full">
-          <SearchBar 
-            size="large" 
-            onFocusChange={setIsInputFocused}
-          />
+          <SearchBar size="large" onFocusChange={setIsInputFocused} />
         </div>
 
         {/* Subtle hint */}
-        <p 
+        <p
           className={`text-center text-sm text-muted-foreground transition-opacity duration-300 ${
             isInputFocused ? "opacity-0 sm:opacity-100" : "opacity-100"
           }`}
         >
-          <span className="hidden sm:inline">Our AI filters out shorts, clickbait & low-value content. Only quality learning materials.</span>
-          <span className="sm:hidden">AI-filtered search for valuable content</span>
+          <span className="hidden sm:inline">
+            Press Enter or click Search to find educational content
+          </span>
+          <span className="sm:hidden">Tap Search to find videos</span>
         </p>
       </div>
 
       {/* Footer */}
-      <footer 
+      <footer
         className={`absolute bottom-0 left-0 right-0 py-6 text-center text-xs text-muted-foreground transition-opacity duration-300 ${
           isInputFocused ? "opacity-0 sm:opacity-100" : "opacity-100"
         }`}
       >
-        <p>Smart filtering removes: shorts, recommendations, addictive content & clickbait</p>
+        <p>A distraction-free video search experience</p>
       </footer>
     </main>
   );

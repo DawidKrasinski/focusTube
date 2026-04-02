@@ -154,8 +154,8 @@ function SearchContent() {
               No quality content found
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Try a different search term. My AI filters for educational content
-              that teaches something meaningful.
+              Try a different search term. We filter out shorts, obvious
+              clickbait, and low-value results.
             </p>
           </div>
         ) : viewMode === "grid" ? (
@@ -176,8 +176,8 @@ function SearchContent() {
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         <p>
-          Results filtered by AI for quality & educational value. No shorts, no
-          clickbait, no distractions.
+          Results filtered by rules for quality & educational value. No shorts,
+          less clickbait, fewer distractions.
         </p>
       </footer>
     </div>

@@ -34,7 +34,7 @@ export function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
         aria-label="List view"
       >
         <List className="h-4 w-4" />
-        <span className="hidden sm:inline">Focus Mode</span>
+        <span className="hidden sm:inline">List</span>
       </button>
     </div>
   );

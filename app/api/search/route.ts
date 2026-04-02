@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Video } from "@/lib/types";
+import { filterVideos } from "@/lib/video-filter";
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
@@ -163,5 +164,5 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ videos });
+  return NextResponse.json({ videos: filterVideos(videos) });
 }
