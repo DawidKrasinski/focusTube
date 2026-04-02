@@ -12,7 +12,7 @@ import {
   VideoListItem,
   VideoListItemSkeleton,
 } from "@/components/video-list-item";
-import { type Video, type DurationFilter, type UploadDateFilter } from "@/lib/mock-data";
+import { type Video, type DurationFilter, type UploadDateFilter } from "@/lib/types";
 
 function SearchContent() {
   const searchParams = useSearchParams();

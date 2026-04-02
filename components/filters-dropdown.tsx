@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { SlidersHorizontal, ChevronDown, X } from "lucide-react";
-import type { DurationFilter, UploadDateFilter } from "@/lib/mock-data";
+import type { DurationFilter, UploadDateFilter } from "@/lib/types";
 
 interface FiltersDropdownProps {
   duration: DurationFilter;

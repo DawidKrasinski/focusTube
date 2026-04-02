@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Video } from "@/lib/mock-data";
+import type { Video } from "@/lib/types";
 
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";

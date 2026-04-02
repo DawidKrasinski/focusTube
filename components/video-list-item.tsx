@@ -1,4 +1,4 @@
-import type { Video } from "@/lib/mock-data";
+import type { Video } from "@/lib/types";
 import { Clock, User } from "lucide-react";
 
 interface VideoListItemProps {
