@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
+import { CountPicker } from "@/components/count-picker";
 import { Focus } from "lucide-react";
 
 export default function HomePage() {
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [count, setCount] = useState(20);
+  const router = useRouter();
+
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+    router.push(`/search?q=${encodeURIComponent(query.trim())}&count=${count}`);
+  };
 
   return (
     <main
@@ -40,7 +49,23 @@ export default function HomePage() {
 
         {/* Search Bar */}
         <div className="w-full">
-          <SearchBar size="large" onFocusChange={setIsInputFocused} />
+          <SearchBar
+            size="large"
+            onSearch={handleSearch}
+            onFocusChange={setIsInputFocused}
+          />
+        </div>
+
+        {/* Count picker — desktop zawsze widoczny, mobile tylko gdy input focused */}
+        <div className="hidden sm:block">
+          <CountPicker count={count} onChange={setCount} visible />
+        </div>
+        <div className="sm:hidden">
+          <CountPicker
+            count={count}
+            onChange={setCount}
+            visible={isInputFocused}
+          />
         </div>
 
         {/* Subtle hint */}

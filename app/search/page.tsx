@@ -22,6 +22,10 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get("q") || "";
+  const count = Math.min(
+    50,
+    Math.max(1, Number(searchParams.get("count")) || 20),
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [duration, setDuration] = useState<DurationFilter>("any");
@@ -37,7 +41,12 @@ function SearchContent() {
     }
     setIsLoading(true);
     setError(null);
-    const params = new URLSearchParams({ q: query, duration, uploadDate });
+    const params = new URLSearchParams({
+      q: query,
+      duration,
+      uploadDate,
+      count: String(count),
+    });
     fetch(`/api/search?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
@@ -53,7 +62,7 @@ function SearchContent() {
   }, [query, duration, uploadDate]);
 
   const handleSearch = (newQuery: string) => {
-    router.push(`/search?q=${encodeURIComponent(newQuery)}`);
+    router.push(`/search?q=${encodeURIComponent(newQuery)}&count=${count}`);
   };
 
   return (
@@ -116,19 +125,26 @@ function SearchContent() {
 
         {/* Results */}
         {isLoading ? (
-          viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <VideoCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : (
-            <div className="max-w-3xl">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <VideoListItemSkeleton key={i} />
-              ))}
-            </div>
-          )
+          <>
+            <p className="text-sm text-muted-foreground mb-6">
+              I am searching for {count}{" "}
+              {count === 1 ? "valuable video" : "valuable videos"}&hellip;
+              filtering out shorts and low-quality content.
+            </p>
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: Math.min(count, 6) }).map((_, i) => (
+                  <VideoCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="max-w-3xl">
+                {Array.from({ length: Math.min(count, 6) }).map((_, i) => (
+                  <VideoListItemSkeleton key={i} />
+                ))}
+              </div>
+            )}
+          </>
         ) : error ? (
           <div className="text-center py-16">
             <p className="text-destructive font-medium mb-2">{error}</p>
