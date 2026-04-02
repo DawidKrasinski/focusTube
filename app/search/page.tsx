@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Focus, ArrowLeft } from "lucide-react";
+import { Focus } from "lucide-react";
 import { SearchBar } from "@/components/search-bar";
 import { FiltersDropdown } from "@/components/filters-dropdown";
 import { ViewToggle, type ViewMode } from "@/components/view-toggle";
@@ -12,24 +12,36 @@ import {
   VideoListItem,
   VideoListItemSkeleton,
 } from "@/components/video-list-item";
-import {
-  mockVideos,
-  filterVideos,
-  type DurationFilter,
-  type UploadDateFilter,
-} from "@/lib/mock-data";
+import { type Video, type DurationFilter, type UploadDateFilter } from "@/lib/mock-data";
 
 function SearchContent() {
-  const searchParams = useSearchParams(); // Query params from URL, e.g. ?q=javascript
+  const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get("q") || "";
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [duration, setDuration] = useState<DurationFilter>("any");
   const [uploadDate, setUploadDate] = useState<UploadDateFilter>("any");
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredVideos = useMemo(() => {
-    return filterVideos(mockVideos, query, duration, uploadDate);
+  useEffect(() => {
+    if (!query.trim()) {
+      setVideos([]);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ q: query, duration, uploadDate });
+    fetch(`/api/search?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(JSON.stringify(data.error));
+        setVideos(data.videos || []);
+      })
+      .catch(() => setError("Nie udało się pobrać filmów. Sprawdź klucz API i spróbuj ponownie."))
+      .finally(() => setIsLoading(false));
   }, [query, duration, uploadDate]);
 
   const handleSearch = (newQuery: string) => {
@@ -75,25 +87,45 @@ function SearchContent() {
               onDurationChange={setDuration}
               onUploadDateChange={setUploadDate}
             />
-            <span className="text-sm text-muted-foreground">
-              {filteredVideos.length} result
-              {filteredVideos.length !== 1 ? "s" : ""}
-              {query && (
-                <span>
-                  {" "}
-                  for{" "}
-                  <span className="text-foreground font-medium">
-                    &quot;{query}&quot;
+            {!isLoading && !error && (
+              <span className="text-sm text-muted-foreground">
+                {videos.length} result
+                {videos.length !== 1 ? "s" : ""}
+                {query && (
+                  <span>
+                    {" "}
+                    for{" "}
+                    <span className="text-foreground font-medium">
+                      &quot;{query}&quot;
+                    </span>
                   </span>
-                </span>
-              )}
-            </span>
+                )}
+              </span>
+            )}
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
 
         {/* Results */}
-        {filteredVideos.length === 0 ? (
+        {isLoading ? (
+          viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <VideoCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="max-w-3xl">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <VideoListItemSkeleton key={i} />
+              ))}
+            </div>
+          )
+        ) : error ? (
+          <div className="text-center py-16">
+            <p className="text-destructive font-medium mb-2">{error}</p>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-muted-foreground mb-4">
               <svg
@@ -120,13 +152,13 @@ function SearchContent() {
           </div>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
+            {videos.map((video) => (
               <VideoCard key={video.id} video={video} />
             ))}
           </div>
         ) : (
           <div className="max-w-3xl">
-            {filteredVideos.map((video) => (
+            {videos.map((video) => (
               <VideoListItem key={video.id} video={video} />
             ))}
           </div>
