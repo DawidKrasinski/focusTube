@@ -8,6 +8,8 @@ export interface Video {
   uploadDateISO: string;
   channel: string;
   views: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
 }
 
 export const mockVideos: Video[] = [
