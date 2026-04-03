@@ -18,16 +18,50 @@ function truncate(text: string, maxChars: number): string {
   return `${text.slice(0, maxChars - 3)}...`;
 }
 
+function extractJsonObject(content: string): string {
+  const trimmed = content.trim();
+
+  if (!trimmed) {
+    return "{}";
+  }
+
+  const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fencedMatch?.[1]) {
+    return fencedMatch[1].trim();
+  }
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
+}
+
+function parseStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((id): id is string => typeof id === "string");
+}
+
 function parseBlockedIds(content: string): string[] {
   try {
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(extractJsonObject(content));
     if (!parsed || typeof parsed !== "object") return [];
-    const blockedIds = Array.isArray(
-      (parsed as { blockedIds?: unknown }).blockedIds,
-    )
-      ? (parsed as { blockedIds: unknown[] }).blockedIds
-      : [];
-    return blockedIds.filter((id): id is string => typeof id === "string");
+
+    const candidateIds = [
+      ...parseStringArray((parsed as { blockedIds?: unknown }).blockedIds),
+      ...parseStringArray(
+        (parsed as { blockedVideoIds?: unknown }).blockedVideoIds,
+      ),
+      ...parseStringArray((parsed as { removeIds?: unknown }).removeIds),
+    ];
+
+    return [...new Set(candidateIds)];
   } catch {
     return [];
   }
@@ -62,7 +96,7 @@ export async function aiFilterVideos(
         {
           role: "system",
           content:
-            'You must remove low-value, non-educational video results. Return compact JSON only: {"blockedIds": ["id1", ...]}. Judge videos only by title and description. Never use channel identity or channel name as a signal. Block only clear non-educational, clickbait, entertainment-only, drama/gossip, reaction, meme, prank, or viral shorts-style content.',
+            'You must remove low-value, non-educational video results. Return compact JSON only: {"blockedIds": ["id1", ...]}. Judge videos only by title and description. Never use channel identity or channel name as a signal. Prefer keeping borderline educational videos. Block only clear non-educational, clickbait, entertainment-only, drama/gossip, reaction, meme, prank, or viral shorts-style content.',
         },
         {
           role: "user",
@@ -75,27 +109,21 @@ export async function aiFilterVideos(
     }),
   });
 
-  console.log(response); // FIXME response is invalid
-
   if (!response.ok) {
     return videos;
   }
 
   const data = (await response.json()) as OpenAIChatCompletionResponse;
   const content = data.choices?.[0]?.message?.content || "";
-  const blockedIds = new Set(parseBlockedIds(content));
-  console.log("AI blocked IDs:", blockedIds);
 
+  if (!content.trim()) {
+    return videos;
+  }
+
+  const blockedIds = new Set(parseBlockedIds(content));
   if (blockedIds.size === 0) {
     return videos;
   }
 
-  const filtered = videos.filter((video) => !blockedIds.has(video.id));
-
-  //   // Safety net: if AI is too aggressive, keep deterministic results.
-  //   if (filtered.length < Math.ceil(videos.length * 0.6)) {
-  //     return videos;
-  //   }
-
-  return filtered;
+  return videos.filter((video) => !blockedIds.has(video.id));
 }

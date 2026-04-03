@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
 import { CountPicker } from "@/components/count-picker";
-import { Focus } from "lucide-react";
+import { Play } from "lucide-react";
 
 export default function HomePage() {
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -35,7 +35,7 @@ export default function HomePage() {
         >
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="p-3 bg-primary rounded-xl">
-              <Focus className="h-8 w-8 text-primary-foreground" />
+              <Play className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground text-balance">

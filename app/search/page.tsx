@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Focus } from "lucide-react";
+import { Play } from "lucide-react";
 import { SearchBar } from "@/components/search-bar";
 import { FiltersDropdown } from "@/components/filters-dropdown";
 import { ViewToggle, type ViewMode } from "@/components/view-toggle";
@@ -79,7 +79,7 @@ function SearchContent() {
                 aria-label="Back to home"
               >
                 <div className="p-2 bg-primary rounded-lg group-hover:opacity-90 transition-opacity">
-                  <Focus className="h-5 w-5 text-primary-foreground" />
+                  <Play className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <span className="font-semibold text-foreground hidden sm:inline">
                   FocusTube
@@ -97,30 +97,40 @@ function SearchContent() {
       <main className="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">
         {/* Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <FiltersDropdown
               duration={duration}
               uploadDate={uploadDate}
               onDurationChange={setDuration}
               onUploadDateChange={setUploadDate}
             />
+            <div className="sm:hidden">
+              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            </div>
             {!isLoading && !error && (
-              <span className="text-sm text-muted-foreground">
-                {videos.length} result
-                {videos.length !== 1 ? "s" : ""}
-                {query && (
-                  <span>
-                    {" "}
-                    for{" "}
-                    <span className="text-foreground font-medium">
-                      &quot;{query}&quot;
+              <>
+                <span className="text-sm text-muted-foreground sm:hidden">
+                  Found {videos.length} result{videos.length !== 1 ? "s" : ""}
+                </span>
+                <span className="hidden sm:inline text-sm text-muted-foreground">
+                  {videos.length} result
+                  {videos.length !== 1 ? "s" : ""}
+                  {query && (
+                    <span>
+                      {" "}
+                      for{" "}
+                      <span className="text-foreground font-medium">
+                        &quot;{query}&quot;
+                      </span>
                     </span>
-                  </span>
-                )}
-              </span>
+                  )}
+                </span>
+              </>
             )}
           </div>
-          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          <div className="hidden sm:block">
+            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          </div>
         </div>
 
         {/* Results */}
