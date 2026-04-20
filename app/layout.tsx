@@ -7,9 +7,9 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FocusTube - AI-Filtered Video Search",
+  title: "FocusTube - Video Search",
   description:
-    "AI-powered search that filters out shorts, clickbait & low-value content. Find educational videos that teach you something.",
+    "Search that filters out shorts, clickbait & low-value content. Find educational videos that teach you something.",
   generator: "v0.app",
   icons: {
     icon: [

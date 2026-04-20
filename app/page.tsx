@@ -3,17 +3,39 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
-import { CountPicker } from "@/components/count-picker";
+import { HomeFilters } from "@/components/home-filters";
+import type { DurationFilter, UploadDateFilter } from "@/lib/types";
 import { Play } from "lucide-react";
 
 export default function HomePage() {
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [count, setCount] = useState(20);
+  const [count, setCount] = useState(10);
+  const [duration, setDuration] = useState<DurationFilter>("any");
+  const [uploadDate, setUploadDate] = useState<UploadDateFilter>("any");
   const router = useRouter();
+
+  const handleFocusChange = (focused: boolean) => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      if (focused) {
+        setIsInputFocused(true);
+      }
+      return;
+    }
+
+    setIsInputFocused(focused);
+  };
 
   const handleSearch = (query: string) => {
     if (!query.trim()) return;
-    router.push(`/search?q=${encodeURIComponent(query.trim())}&count=${count}`);
+
+    const params = new URLSearchParams({
+      q: query.trim(),
+      count: String(count),
+      duration,
+      uploadDate,
+    });
+
+    router.push(`/search?${params.toString()}`);
   };
 
   return (
@@ -52,21 +74,19 @@ export default function HomePage() {
           <SearchBar
             size="large"
             onSearch={handleSearch}
-            onFocusChange={setIsInputFocused}
+            onFocusChange={handleFocusChange}
           />
         </div>
 
-        {/* Count picker — desktop zawsze widoczny, mobile tylko gdy input focused */}
-        <div className="hidden sm:block">
-          <CountPicker count={count} onChange={setCount} visible />
-        </div>
-        <div className="sm:hidden">
-          <CountPicker
-            count={count}
-            onChange={setCount}
-            visible={isInputFocused}
-          />
-        </div>
+        <HomeFilters
+          duration={duration}
+          uploadDate={uploadDate}
+          maxResults={count}
+          onDurationChange={setDuration}
+          onUploadDateChange={setUploadDate}
+          onMaxResultsChange={setCount}
+          isVisible={isInputFocused}
+        />
 
         {/* Subtle hint */}
         <p

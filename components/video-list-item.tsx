@@ -3,11 +3,16 @@ import { Clock, User } from "lucide-react";
 
 interface VideoListItemProps {
   video: Video;
+  onClick?: (video: Video) => void;
 }
 
-export function VideoListItem({ video }: VideoListItemProps) {
+export function VideoListItem({ video, onClick }: VideoListItemProps) {
+  const handleClick = () => {
+    onClick?.(video);
+  };
+
   const content = (
-    <article className="group cursor-pointer py-4 border-b border-border last:border-b-0 hover:bg-secondary/50 -mx-4 px-4 transition-colors">
+    <article className="group cursor-pointer py-4 border-b border-border last:border-b-0 hover:bg-secondary/50 -mx-4 px-4 transition-colors" onClick={handleClick}>
       <div className="flex gap-4">
         {/* Thumbnail */}
         <div className="relative shrink-0 w-40 aspect-video bg-secondary rounded-md overflow-hidden border border-border">
@@ -55,15 +60,8 @@ export function VideoListItem({ video }: VideoListItemProps) {
     </article>
   );
 
-  if (video.videoUrl) {
-    return (
-      <a href={video.videoUrl} target="_blank" rel="noopener noreferrer">
-        {content}
-      </a>
-    );
-  }
-
   return content;
+}
 }
 
 export function VideoListItemSkeleton() {

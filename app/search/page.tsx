@@ -8,10 +8,7 @@ import { SearchBar } from "@/components/search-bar";
 import { FiltersDropdown } from "@/components/filters-dropdown";
 import { ViewToggle, type ViewMode } from "@/components/view-toggle";
 import { VideoCard, VideoCardSkeleton } from "@/components/video-card";
-import {
-  VideoListItem,
-  VideoListItemSkeleton,
-} from "@/components/video-list-item";
+import { VideoModal } from "@/components/video-modal";
 import {
   type Video,
   type DurationFilter,
@@ -26,13 +23,19 @@ function SearchContent() {
     50,
     Math.max(1, Number(searchParams.get("count")) || 20),
   );
+  const initialDuration = (searchParams.get("duration") ||
+    "any") as DurationFilter;
+  const initialUploadDate = (searchParams.get("uploadDate") ||
+    "any") as UploadDateFilter;
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [duration, setDuration] = useState<DurationFilter>("any");
-  const [uploadDate, setUploadDate] = useState<UploadDateFilter>("any");
+  const [duration, setDuration] = useState<DurationFilter>(initialDuration);
+  const [uploadDate, setUploadDate] =
+    useState<UploadDateFilter>(initialUploadDate);
   const [videos, setVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -187,13 +190,21 @@ function SearchContent() {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {videos.map((video) => (
-              <VideoCard key={video.id} video={video} />
+              <VideoCard
+                key={video.id}
+                video={video}
+                onClick={setSelectedVideo}
+              />
             ))}
           </div>
         ) : (
           <div className="max-w-3xl">
             {videos.map((video) => (
-              <VideoListItem key={video.id} video={video} />
+              <VideoListItem
+                key={video.id}
+                video={video}
+                onClick={setSelectedVideo}
+              />
             ))}
           </div>
         )}
@@ -206,6 +217,14 @@ function SearchContent() {
           less clickbait, fewer distractions.
         </p>
       </footer>
+
+      {/* Video Modal */}
+      {selectedVideo && (
+        <VideoModal
+          video={selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Video } from "@/lib/types";
-import { aiFilterVideos } from "@/lib/ai-video-filter";
 import { filterVideos } from "@/lib/video-filter";
 
-// Konfiguracja zewnętrznych usług i limity dla AI filtrowania.
+// Konfiguracja zewnętrznych usług.
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
-const AI_BATCH_SIZE = 20;
-const MAX_AI_ANALYZED_VIDEOS = 100;
 
 // Zamienia czas z formatu YouTube ISO 8601 (`PT4M13S`) na czytelny string i sekundy.
 function parseIsoDuration(iso: string): { formatted: string; seconds: number } {
@@ -30,6 +27,77 @@ function parseIsoDuration(iso: string): { formatted: string; seconds: number } {
     formatted: `${minutes}:${String(seconds).padStart(2, "0")}`,
     seconds: totalSeconds,
   };
+}
+
+// Pobiera komentarze dla filmów z YouTube API.
+async function fetchCommentsForVideos(
+  videoIds: string[],
+  apiKey: string,
+): Promise<Map<string, Comment[]>> {
+  const commentsMap = new Map<string, Comment[]>();
+
+  // Pobieramy komentarze dla maksymalnie 10 filmów, aby nie przekroczyć limitów API
+  const videosToFetch = videoIds.slice(0, 10);
+
+  for (const videoId of videosToFetch) {
+    try {
+      const commentsParams = new URLSearchParams({
+        part: "snippet",
+        videoId,
+        key: apiKey,
+        order: "relevance",
+        maxResults: "10", // Maksymalnie 10 komentarzy na film
+      });
+
+      const commentsRes = await fetch(
+        `${YOUTUBE_API_BASE}/commentThreads?${commentsParams.toString()}`,
+        { cache: "no-store" },
+      );
+
+      if (commentsRes.ok) {
+        const commentsData = await commentsRes.json();
+        const comments: Comment[] = (commentsData.items || []).map(
+          (item: any) => ({
+            id: item.snippet.topLevelComment.id,
+            author: item.snippet.topLevelComment.snippet.authorDisplayName,
+            text: item.snippet.topLevelComment.snippet.textDisplay,
+            date: formatCommentDate(
+              item.snippet.topLevelComment.snippet.publishedAt,
+            ),
+            likes: item.snippet.topLevelComment.snippet.likeCount || 0,
+          }),
+        );
+        commentsMap.set(videoId, comments);
+      } else {
+        // Jeśli nie można pobrać komentarzy (np. komentarze wyłączone), ustaw pustą tablicę
+        commentsMap.set(videoId, []);
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch comments for video ${videoId}:`, error);
+      commentsMap.set(videoId, []);
+    }
+  }
+
+  return commentsMap;
+}
+
+// Formatuje datę komentarza do czytelnego formatu.
+function formatCommentDate(publishedAt: string): string {
+  const now = new Date();
+  const published = new Date(publishedAt);
+  const diffMs = now.getTime() - published.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+
+  return `${Math.floor(diffDays / 365)}y ago`;
 }
 
 // Formatuje datę publikacji do prostego opisu względnego dla UI.
@@ -130,9 +198,7 @@ export async function GET(request: NextRequest) {
   // Zbieramy gotowe wyniki etapami i pilnujemy, żeby nie zwracać duplikatów.
   const collectedVideos: Video[] = [];
   const processedVideoIds = new Set<string>();
-  const isAiFilteringEnabled = Boolean(process.env.OPENAI_API_KEY);
   let nextPageToken: string | null = "";
-  let analyzedByAiCount = 0;
 
   // Pobieramy kolejne strony z YouTube aż uzbieramy docelową liczbę filmów.
   while (collectedVideos.length < targetCount && nextPageToken !== null) {
@@ -227,32 +293,7 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    let acceptedVideos: Video[] = uniqueNonShortVideos;
-
-    // Następnie opcjonalnie przepuszczamy część wyników przez AI,
-    // żeby odsiać clickbait i treści niskiej jakości.
-    if (isAiFilteringEnabled && analyzedByAiCount < MAX_AI_ANALYZED_VIDEOS) {
-      const aiBudgetLeft = MAX_AI_ANALYZED_VIDEOS - analyzedByAiCount;
-      const aiCandidates = uniqueNonShortVideos.slice(
-        0,
-        Math.min(AI_BATCH_SIZE, aiBudgetLeft),
-      );
-      const remainingVideos = uniqueNonShortVideos.slice(aiCandidates.length);
-
-      analyzedByAiCount += aiCandidates.length;
-
-      try {
-        const aiAcceptedVideos = await aiFilterVideos(
-          trimmedQuery,
-          aiCandidates,
-        );
-        acceptedVideos = [...aiAcceptedVideos, ...remainingVideos];
-      } catch {
-        acceptedVideos = uniqueNonShortVideos;
-      }
-    }
-
-    for (const video of acceptedVideos) {
+    for (const video of uniqueNonShortVideos) {
       if (!processedVideoIds.has(video.id)) {
         processedVideoIds.add(video.id);
         collectedVideos.push(video);
@@ -262,14 +303,22 @@ export async function GET(request: NextRequest) {
         break;
       }
     }
-
-    for (const video of uniqueNonShortVideos) {
-      processedVideoIds.add(video.id);
-    }
   }
 
   // Zwracamy maksymalnie tyle wyników, ile zażądał frontend.
+  const finalVideos = collectedVideos.slice(0, targetCount);
+
+  // Pobieramy komentarze dla zebranych filmów
+  const videoIds = finalVideos.map((v) => v.id);
+  const commentsMap = await fetchCommentsForVideos(videoIds, YOUTUBE_API_KEY);
+
+  // Przypisujemy komentarze do filmów
+  const videosWithComments = finalVideos.map((video) => ({
+    ...video,
+    comments: commentsMap.get(video.id) || [],
+  }));
+
   return NextResponse.json({
-    videos: collectedVideos.slice(0, targetCount),
+    videos: videosWithComments,
   });
 }

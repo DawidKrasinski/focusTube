@@ -2,11 +2,16 @@ import type { Video } from "@/lib/types";
 
 interface VideoCardProps {
   video: Video;
+  onClick?: (video: Video) => void;
 }
 
-export function VideoCard({ video }: VideoCardProps) {
+export function VideoCard({ video, onClick }: VideoCardProps) {
+  const handleClick = () => {
+    onClick?.(video);
+  };
+
   const content = (
-    <article className="group cursor-pointer">
+    <article className="group cursor-pointer" onClick={handleClick}>
       {/* Thumbnail */}
       <div className="relative aspect-video bg-secondary rounded-lg overflow-hidden mb-3 border border-border">
         {video.thumbnailUrl ? (
@@ -42,14 +47,6 @@ export function VideoCard({ video }: VideoCardProps) {
       </div>
     </article>
   );
-
-  if (video.videoUrl) {
-    return (
-      <a href={video.videoUrl} target="_blank" rel="noopener noreferrer">
-        {content}
-      </a>
-    );
-  }
 
   return content;
 }
